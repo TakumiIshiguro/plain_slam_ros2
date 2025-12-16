@@ -158,6 +158,7 @@ class LIO3DInterface {
 
   bool is_map_initialized_;
   NormalMap normal_map_;
+  double last_map_updated_stamp_;
 
   bool is_map_updated_;
 

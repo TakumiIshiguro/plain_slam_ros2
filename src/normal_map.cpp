@@ -119,6 +119,7 @@ bool NormalMap::FindCorrespondence(
       const Eigen::Vector3f d = filtered_map_cloud_[indices[i]] - mean;
       cov += d * d.transpose();
     }
+    cov += 1e-3f * Eigen::Matrix3f::Identity();
 
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> solver(cov);
     if (solver.info() != Eigen::Success) {

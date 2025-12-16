@@ -46,6 +46,7 @@ LIO3DInterface::LIO3DInterface() {
   optimization_convergence_th_ = 0.1f;
 
   is_map_initialized_ = false;
+  last_map_updated_stamp_ = 0.0;
 
   imu_state_cov_ = StateCov::Identity();
   imu_odom_state_cov_ = imu_state_cov_;
@@ -194,12 +195,15 @@ void LIO3DInterface::SetScanCloud(
     std::cerr << "[WARN] No matching IMU data for scan timestamp range ["
       << start_stamp << ", " << end_stamp << "]" << std::endl;
     // printf("%.10lf --- %.10lf\n", imu_measures_.front().stamp, imu_measures_.back().stamp);
-    return;
+    // return;
   }
 
   const State prev_state = imu_state_;
-  preintegrator_.Preintegration(relevant_imu_measures, imu_state_, imu_state_cov_);
-  preintegrator_.DeskewScanCloud(imu_state_, relevant_imu_measures, scan_stamps_, scan_cloud_);
+
+  if (relevant_imu_measures.size() > 0) {
+    preintegrator_.Preintegration(relevant_imu_measures, imu_state_, imu_state_cov_);
+    preintegrator_.DeskewScanCloud(imu_state_, relevant_imu_measures, scan_stamps_, scan_cloud_);
+  }
 
   const State pred_state = imu_state_;
   const float preint_time = preintegrator_.GetPreintegrationTime();
@@ -220,7 +224,7 @@ void LIO3DInterface::SetScanCloud(
       num_max_iteration_, num_max_matching_points_, max_correspondence_dist_,
       optimization_convergence_th_, preint_time, imu_state_, normal_map_)) {
       std::cerr << "[WARN] Optimization has not converged" << std::endl;
-      return;
+      // return;
     }
     active_points_rate = hg_observer_.GetActivePointsRate();
   } else {
@@ -230,7 +234,7 @@ void LIO3DInterface::SetScanCloud(
       max_correspondence_dist_, optimization_convergence_th_, preint_time,
       relevant_imu_measures, imu_state_, imu_state_cov_, normal_map_)) {
       std::cerr << "[WARN] Optimization has not converged" << std::endl;
-      return;
+      // return;
     }
     active_points_rate = joint_optimizer_.GetActivePointsRate();
   }
@@ -263,11 +267,16 @@ void LIO3DInterface::SetScanCloud(
   // Update the local map if the new state is classified as a keyframe
   if (localization_mode_) {
     return;
-  } else if (kf_detector_.IsKeyframe(imu_state_.T) &&
+  } else if (kf_detector_.IsKeyframe(imu_state_.T) ||
     active_points_rate < min_active_points_rate_) {
-    kf_detector_.UpdateKeyframe(imu_state_.T);
-    normal_map_.AddKeyframe(imu_state_.T, aligned_scan_cloud_);
-    is_map_updated_ = true;
+    const double dt = start_stamp - last_map_updated_stamp_;
+    if (dt > 1.0) {
+      kf_detector_.UpdateKeyframe(imu_state_.T);
+      normal_map_.AddKeyframe(imu_state_.T, aligned_scan_cloud_);
+      is_map_updated_ = true;
+      last_map_updated_stamp_ = start_stamp;
+      // std::cout << "Local map is updated." << std::endl;
+    }
   }
 }
 

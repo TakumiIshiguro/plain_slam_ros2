@@ -5,7 +5,7 @@ lio_3d_node:
     map_cloud_dir: "/tmp/pslam_data/"
     param_files_dir: "" # LIO parameters must be located under plain_slam_ros2/config/
 
-    pointcloud_topic: "/livox/lidar"
+    pointcloud_topic: "/livox/points"
     imu_topic: "/livox/imu"
 
     imu_pose_topic: "/pslam/imu_pose"

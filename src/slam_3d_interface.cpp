@@ -43,6 +43,8 @@ SLAM3DInterface::SLAM3DInterface() {
 
   max_num_loop_candidates_ = 10;
   loop_detection_distance_thresh_ = 30.0f;
+  loop_detection_height_thresh_ = 1.0f;
+  min_local_map_matching_rate_ = 0.8f;
   error_average_th_ = 100.0f;
   active_points_rate_th_ = 0.5f;
 
@@ -64,9 +66,11 @@ void SLAM3DInterface::ReadSLAMParams() {
   const float keyframe_angle_th = config["keyframe"]["angle_th"].as<float>();
   kf_detector_.SetDistanceThreshold(config["keyframe"]["distance_th"].as<float>());
   kf_detector_.SetAngleThreshold(keyframe_angle_th * M_PI / 180.0f);
+  min_local_map_matching_rate_ = config["keyframe"]["min_local_map_matching_rate"].as<float>();
 
   max_num_loop_candidates_ = config["loop_closure"]["num_loop_candidates"].as<size_t>();
   loop_detection_distance_thresh_ = config["loop_closure"]["loop_detection_distance_thresh"].as<float>();
+  loop_detection_height_thresh_ = config["loop_closure"]["loop_detection_height_thresh"].as<float>();
   error_average_th_ = config["loop_closure"]["error_average_th"].as<float>();
   active_points_rate_th_ = config["loop_closure"]["active_points_rate_th"].as<float>();
   gicp_.SetMaxIteration(config["loop_closure"]["gicp_max_iteration"].as<size_t>());
@@ -134,6 +138,9 @@ void SLAM3DInterface::SetData(
     WritePointCloud(filtered_cloud_file, filtered_cloud);
 
     BuildFilteredMapCloud();
+    std::vector<size_t> target_indices;
+    GetTargetCandidateIndices(slam_pose_, target_indices);
+    BuildLocalMapKDTree(target_indices);
 
     is_pose_graph_updated_ = true;
     latest_keyframe_odom_pose_ = odom_pose;
@@ -141,7 +148,11 @@ void SLAM3DInterface::SetData(
   }
 
   // Return if the current pose is not a keyframe
-  if (!kf_detector_.IsKeyframe(slam_pose_)) {
+  ComputeLocalMapMatchingRate(filtered_cloud);
+  // std::cout << "local_map_matching_rate_ = " << local_map_matching_rate_ * 100.0f << std::endl;
+  if (local_map_matching_rate_ < min_local_map_matching_rate_) {
+    kf_detector_.AddKeyframe(slam_pose_);
+  } else if (!kf_detector_.IsKeyframe(slam_pose_)) {
     return;
   }
 
@@ -178,7 +189,8 @@ void SLAM3DInterface::SetData(
     const Sophus::SE3f& target_pose = pose_graph_[target_indices[i]];
     const Eigen::Vector3f delta_trans = target_pose.translation() - slam_pose_.translation();
     const float delta = delta_trans.norm();
-    if (delta > loop_detection_distance_thresh_) {
+    const float dz = fabs(delta_trans.z());
+    if (delta > loop_detection_distance_thresh_ || dz > loop_detection_height_thresh_) {
       continue;
     }
 
@@ -223,6 +235,8 @@ void SLAM3DInterface::SetData(
 
   BuildGraphPoseKDTree();
   BuildFilteredMapCloud();
+  GetTargetCandidateIndices(slam_pose_, target_indices);
+  BuildLocalMapKDTree(target_indices);
 }
 
 void SLAM3DInterface::MakeSLAMDataDir() {
@@ -352,6 +366,46 @@ void SLAM3DInterface::BuildGraphPoseKDTree() {
   graph_pose_kdtree_ = std::make_unique<KDTree>(3,
     *graph_pose_adaptor_, nanoflann::KDTreeSingleIndexAdaptorParams(10));
   graph_pose_kdtree_->buildIndex();
+}
+
+void SLAM3DInterface::BuildLocalMapKDTree(const std::vector<size_t>& target_indices) {
+  local_map_cloud_.clear();
+  local_map_cloud_.reserve(10000 * target_indices.size());
+  for (size_t i = 0; i < target_indices.size(); ++i) {
+    const size_t idx = target_indices[i];
+    const Sophus::SE3f& T = pose_graph_[idx];
+    std::string raw_cloud_file, filtered_cloud_file;
+    GetCloudFileNames(idx, raw_cloud_file, filtered_cloud_file);
+    PointCloud3f cloud;
+    ReadPointCloud(filtered_cloud_file, cloud);
+    for (const auto& p : cloud) {
+      local_map_cloud_.push_back(T * p);
+    }
+  }
+
+  local_map_adaptor_ = std::make_unique<PointCloudAdaptor>(local_map_cloud_);
+  local_map_kdtree_ = std::make_unique<KDTree>(3, *local_map_adaptor_,
+    nanoflann::KDTreeSingleIndexAdaptorParams(10));
+  local_map_kdtree_->buildIndex();
+}
+
+void SLAM3DInterface::ComputeLocalMapMatchingRate(const PointCloud3f& filtered_cloud) {
+  const float dist2 = 0.5f * 0.5f;
+  int corresp = 0;
+  for (size_t i = 0; i < filtered_cloud.size(); ++i) {
+    const Eigen::Vector3f query = slam_pose_ * filtered_cloud[i];
+    std::vector<size_t> nn_idx(1);
+    std::vector<float> nn_dist(1);
+    nanoflann::KNNResultSet<float> nn_result_set(1);
+    nn_result_set.init(nn_idx.data(), nn_dist.data());
+    local_map_kdtree_->findNeighbors(nn_result_set,
+      query.data(), nanoflann::SearchParameters());
+    if (nn_dist[0] <= dist2) {
+      corresp++;
+    }
+  }
+
+  local_map_matching_rate_ = static_cast<float>(corresp) / static_cast<float>(filtered_cloud.size());
 }
 
 void SLAM3DInterface::GetTargetCandidateIndices(

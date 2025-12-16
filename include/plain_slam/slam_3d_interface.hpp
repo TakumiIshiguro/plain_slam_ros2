@@ -89,6 +89,10 @@ class SLAM3DInterface {
     loop_detection_distance_thresh_ = th;
   }
 
+  void SetLoopDetectionHeightThresh(float th) {
+    loop_detection_height_thresh_ = th;
+  }
+
   bool IsPoseGraphUpdated() const {
     return is_pose_graph_updated_;
   }
@@ -155,8 +159,15 @@ class SLAM3DInterface {
   std::unique_ptr<PointCloudAdaptor> graph_pose_adaptor_;
   std::unique_ptr<KDTree> graph_pose_kdtree_;
 
+  PointCloud3f local_map_cloud_;
+  std::unique_ptr<PointCloudAdaptor> local_map_adaptor_;
+  std::unique_ptr<KDTree> local_map_kdtree_;
+  float local_map_matching_rate_;
+
   size_t max_num_loop_candidates_;
   float loop_detection_distance_thresh_;
+  float loop_detection_height_thresh_;
+  float min_local_map_matching_rate_;
   float error_average_th_;
   float active_points_rate_th_;
 
@@ -172,6 +183,10 @@ class SLAM3DInterface {
   void BuildFilteredMapCloud();
 
   void BuildGraphPoseKDTree();
+
+  void BuildLocalMapKDTree(const std::vector<size_t>& target_indices);
+
+  void ComputeLocalMapMatchingRate(const PointCloud3f& filtered_cloud);
 
   void GetTargetCandidateIndices(
     const Sophus::SE3f& source_pose,

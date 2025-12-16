@@ -23,15 +23,15 @@ scan_cloud_preprocess:
   filter_size: 0.1
 
 normal_map:
-  num_keyframes: 10
+  num_keyframes: 20
   filter_size: 0.1
   num_normal_points: 10
-  normal_eigen_val_thresh: 0.01
+  normal_eigen_val_thresh: 0.05
 
 estimator:
   use_loose_coupling: false
-  huber_delta: 0.5
-  num_max_iteration: 5
+  huber_delta: 0.1
+  num_max_iteration: 10
   num_max_matching_points: 100000
-  max_correspondence_dist: 0.5
+  max_correspondence_dist: 1.0
   convergence_th: 0.5

@@ -127,7 +127,7 @@ void GraphOptimizer::Optimize(
           H_list.emplace_back(Eigen::Triplet<float>(j, k, H(j, k)));
         }
       }
-      B.block<6, 1>(6, 0) += b;
+      B.block<6, 1>(0, 0) += b;
     }
 
     // edges

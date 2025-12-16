@@ -67,9 +67,6 @@ bool JointOptimizer::Estimate(
   const float dt2 = dt * dt;
 
   for (size_t iter_num = 0; iter_num < max_iter_num; ++iter_num) {
-    size_t used_points_num = 0;
-    size_t corresp_num = 0;
-
     std::vector<float> rs;
     std::vector<Matrix1x24f, Eigen::aligned_allocator<Matrix1x24f>> Js;
     rs.reserve(num_max_matching_points);
@@ -84,6 +81,9 @@ bool JointOptimizer::Estimate(
       phi += m.gyro - state.gb;
     }
     phi *= dt;
+
+    size_t used_points_num = 0;
+    size_t corresp_num = 0;
 
     for (size_t i = 0; i < scan_cloud.size(); i += scan_step) {
       used_points_num++;
@@ -205,7 +205,7 @@ bool JointOptimizer::Estimate(
 
     const float epsilon = d.norm();
     // std::cout << "iteration = " << iter_num + 1 << ", epsilon = " << epsilon << std::endl;
-    if (epsilon < convergence_th) {
+    if (iter_num > 0 && epsilon < convergence_th) {
       has_converged = true;
       cov = (I - K * J) * P;
       break;
