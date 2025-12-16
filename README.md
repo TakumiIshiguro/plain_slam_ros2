@@ -1,10 +1,10 @@
 # plain_slam_ros2
 
-📖 Documentation: [English](doc/en/book.pdf) | [日本語](doc/jp/book.pdf)
+📖 Documentation including mathematical details: [English](doc/en/book.pdf) | [日本語](doc/jp/book.pdf)
 
 
 
-**plain_slam_ros2** is a ROS 2 package for LIO, LiDAR SLAM, and localization, built upon a minimal and modular SLAM system. The implementation is concise - its core C++ source code contains fewer than **2,000 lines**, excluding blank lines and comments.
+**plain_slam_ros2** is a ROS 2 package for LIO, LiDAR SLAM, and localization, built upon a minimal and modular SLAM system. The implementation is concise - its core C++ source code contains fewer than **1,900 lines**, excluding blank lines and comments.
 
 Despite its simplicity, **plain_slam_ros2** provides the following key features:
 
@@ -27,9 +27,7 @@ The white points represent the local map used in LIO. When operating in localiza
 
 ![slam_example](gifs/slam_example.gif)
 
-**The SLAM result on the Newer College Dataset** 🔗 [Newer College Dataset Website](https://ori-drs.github.io/newer-college-dataset/)
-
-**Note:** This result was obtained using **ROS 1**.
+**The SLAM result on the Newer College Dataset** 🔗 [Newer College Dataset Website](https://ori-drs.github.io/newer-college-dataset/) (tested with **ROS 1**).
 
 ![slam_result](figs/slam_result_newer_college_dataset.svg)
 
@@ -58,7 +56,7 @@ If you wish to use a different LiDAR sensor, you can either:
 
 ## Install
 
-**Note:** This package has been tested on **Ubuntu 22.04** with **ROS 2 Humble**.
+This package has been tested on **Ubuntu 22.04** with **ROS 2 Humble**.
 
 **YAML and Eigen**
 
@@ -140,7 +138,7 @@ If you want to construct a standard transformation tree for navigation, such as 
 
 ![overview](figs/overview.svg)
 
-The main source files of Plain SLAM are organized into an **interface layer** and **core modules**, as illustrated in the overview figure. The total C++ implementation of the Plain SLAM components consists of fewer than 1,800 lines of code, excluding blank lines and comments.
+The main source files of Plain SLAM are organized into an **interface layer** and **core modules**, as illustrated in the overview figure. The total C++ implementation of the Plain SLAM components consists of fewer than 1,900 lines of code, excluding blank lines and comments.
 
 The result of the code analysis using `cloc` is as follows (executed via `code_stats.sh`):
 
@@ -150,17 +148,15 @@ The result of the code analysis using `cloc` is as follows (executed via `code_s
       27 unique files.                              
        0 files ignored.
 
-github.com/AlDanial/cloc v 1.90  T=0.01 s (2300.6 files/s, 342020.0 lines/s)
+github.com/AlDanial/cloc v 1.90  T=0.01 s (2171.8 files/s, 329315.2 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C++                             13            415            403           1821
-C/C++ Header                    14            284            324            767
+C++                             13            420            408           1875
+C/C++ Header                    14            288            324            779
 -------------------------------------------------------------------------------
-SUM:                            27            699            727           2588
+SUM:                            27            708            732           2654
 -------------------------------------------------------------------------------
-
-
 ```
 
 **Note:** The header files contain many inline accessor methods (e.g., setters and getters), but no core processing logic is implemented in them.
