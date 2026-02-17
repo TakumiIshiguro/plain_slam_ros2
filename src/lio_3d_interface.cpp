@@ -165,8 +165,19 @@ void LIO3DInterface::SetScanCloud(
   }
 
   // Do not use scan_stamps_ because it loses some scans when the scan is clipped.
-  const double start_stamp = scan_stamps.front();
-  const double end_stamp = scan_stamps.back();
+  double start_stamp = scan_stamps.front();
+  double end_stamp = scan_stamps.back();
+  if (end_stamp < start_stamp) {
+    std::swap(start_stamp, end_stamp);
+  }
+  // Some sensors/simulators publish a "time" field but keep it constant (e.g., all zeros).
+  // In that case, use a minimum search window so IMU data can still be associated.
+  constexpr double kMinScanTimeRangeSec = 0.1;
+  if ((end_stamp - start_stamp) < kMinScanTimeRangeSec) {
+    const double center = 0.5 * (start_stamp + end_stamp);
+    start_stamp = center - 0.5 * kMinScanTimeRangeSec;
+    end_stamp = center + 0.5 * kMinScanTimeRangeSec;
+  }
   std::vector<IMUMeasure> relevant_imu_measures;
 
   // Retrieve relevant IMU measurements
@@ -186,8 +197,33 @@ void LIO3DInterface::SetScanCloud(
       }
     }
 
-    if (erase_idx > 0) {
+    if (!relevant_imu_measures.empty() && erase_idx > 0) {
       imu_measures_.erase_begin(erase_idx);
+    }
+  }
+
+  // Fallback for constant timestamp offset between LiDAR and IMU domains.
+  // Example: LiDAR is in simulated time while IMU is in another epoch.
+  if (relevant_imu_measures.empty()) {
+    std::lock_guard<std::mutex> lock(imu_mutex_);
+    if (!imu_measures_.empty()) {
+      const double imu_end = imu_measures_.back().stamp;
+      const double stamp_offset = imu_end - end_stamp;
+      const double shifted_start = start_stamp + stamp_offset;
+      const double shifted_end = end_stamp + stamp_offset;
+
+      for (size_t i = 0; i < imu_measures_.size(); ++i) {
+        const auto& imu = imu_measures_[i];
+        if (imu.stamp < shifted_start) {
+          continue;
+        }
+        if (imu.stamp > shifted_end) {
+          break;
+        }
+        IMUMeasure shifted_imu = imu;
+        shifted_imu.stamp -= stamp_offset;
+        relevant_imu_measures.push_back(shifted_imu);
+      }
     }
   }
 

@@ -127,22 +127,48 @@ void ParsePSLAMCloud(
   int z_offset = -1;
   int intensity_offset = -1;
   int timestamp_offset = -1;
+  int timestamp_datatype = -1;
+  int time_offset = -1;
+  int time_datatype = -1;
+  int t_offset = -1;
+  int t_datatype = -1;
 
   for (const auto& field : msg->fields) {
     if (field.name == "x") x_offset = field.offset;
     else if (field.name == "y") y_offset = field.offset;
     else if (field.name == "z") z_offset = field.offset;
     else if (field.name == "intensity") intensity_offset = field.offset;
-    else if (field.name == "timestamp") timestamp_offset = field.offset;
+    else if (field.name == "timestamp") {
+      timestamp_offset = field.offset;
+      timestamp_datatype = field.datatype;
+    } else if (field.name == "time") {
+      time_offset = field.offset;
+      time_datatype = field.datatype;
+    } else if (field.name == "t") {
+      t_offset = field.offset;
+      t_datatype = field.datatype;
+    }
   }
 
   const size_t point_step = msg->point_step;
   const size_t point_count = msg->width * msg->height;
   const auto& data = msg->data;
 
+  if (x_offset < 0 || y_offset < 0 || z_offset < 0 || intensity_offset < 0) {
+    scan_cloud.clear();
+    scan_intensities.clear();
+    scan_stamps.clear();
+    return;
+  }
+
   scan_cloud.resize(point_count);
   scan_intensities.resize(point_count);
   scan_stamps.resize(point_count);
+
+  const double header_stamp = rclcpp::Time(msg->header.stamp).seconds();
+  const bool has_timestamp = timestamp_offset >= 0;
+  const bool has_time = time_offset >= 0;
+  const bool has_t = t_offset >= 0;
 
   for (size_t i = 0; i < point_count; ++i) {
     const uint8_t* point_ptr = &data[i * point_step];
@@ -155,7 +181,55 @@ void ParsePSLAMCloud(
 
     std::memcpy(&scan_intensities[i], point_ptr + intensity_offset, sizeof(float));
 
-    std::memcpy(&scan_stamps[i], point_ptr + timestamp_offset, sizeof(double));
+    if (has_timestamp) {
+      if (timestamp_datatype == sensor_msgs::msg::PointField::FLOAT64) {
+        std::memcpy(&scan_stamps[i], point_ptr + timestamp_offset, sizeof(double));
+      } else if (timestamp_datatype == sensor_msgs::msg::PointField::FLOAT32) {
+        float stamp_f32;
+        std::memcpy(&stamp_f32, point_ptr + timestamp_offset, sizeof(float));
+        scan_stamps[i] = static_cast<double>(stamp_f32);
+      } else if (timestamp_datatype == sensor_msgs::msg::PointField::UINT32) {
+        uint32_t stamp_u32;
+        std::memcpy(&stamp_u32, point_ptr + timestamp_offset, sizeof(uint32_t));
+        scan_stamps[i] = static_cast<double>(stamp_u32) * 1e-9;
+      } else {
+        scan_stamps[i] = header_stamp;
+      }
+    } else if (has_time) {
+      if (time_datatype == sensor_msgs::msg::PointField::FLOAT32) {
+        float rel_time;
+        std::memcpy(&rel_time, point_ptr + time_offset, sizeof(float));
+        scan_stamps[i] = header_stamp + static_cast<double>(rel_time);
+      } else if (time_datatype == sensor_msgs::msg::PointField::FLOAT64) {
+        double rel_time;
+        std::memcpy(&rel_time, point_ptr + time_offset, sizeof(double));
+        scan_stamps[i] = header_stamp + rel_time;
+      } else if (time_datatype == sensor_msgs::msg::PointField::UINT32) {
+        uint32_t rel_time_ns;
+        std::memcpy(&rel_time_ns, point_ptr + time_offset, sizeof(uint32_t));
+        scan_stamps[i] = header_stamp + static_cast<double>(rel_time_ns) * 1e-9;
+      } else {
+        scan_stamps[i] = header_stamp;
+      }
+    } else if (has_t) {
+      if (t_datatype == sensor_msgs::msg::PointField::UINT32) {
+        uint32_t rel_time_ns;
+        std::memcpy(&rel_time_ns, point_ptr + t_offset, sizeof(uint32_t));
+        scan_stamps[i] = header_stamp + static_cast<double>(rel_time_ns) * 1e-9;
+      } else if (t_datatype == sensor_msgs::msg::PointField::FLOAT32) {
+        float rel_time;
+        std::memcpy(&rel_time, point_ptr + t_offset, sizeof(float));
+        scan_stamps[i] = header_stamp + static_cast<double>(rel_time);
+      } else if (t_datatype == sensor_msgs::msg::PointField::FLOAT64) {
+        double rel_time;
+        std::memcpy(&rel_time, point_ptr + t_offset, sizeof(double));
+        scan_stamps[i] = header_stamp + rel_time;
+      } else {
+        scan_stamps[i] = header_stamp;
+      }
+    } else {
+      scan_stamps[i] = header_stamp;
+    }
   }
 }
 
