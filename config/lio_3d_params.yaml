@@ -4,34 +4,36 @@ initial_pose:
 
 extrinsics:
   imu_to_lidar:
-    translation: [0.0110, 0.02329, -0.04412] # livox mid360
-    rotation_matrix: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0] # livox mid360 
+    translation: [-0.350, 0.000, 0.368] # livox mid360
     # translation: [-0.006253, 0.011775, 0.028535] # outster os1
-    # rotation_matrix: [-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0] # outster os1
+    rotation_matrix: [1,0,0, 0,1,0, 0,0,1]
+    # rotation_matrix: [0,-1,0, 1,0,0, 0,0,1]
+    # rotation_matrix: [-1,0,0, 0,-1,0, 0,0,1]
+    # rotation_matrix: [0,1,0, -1,0,0, 0,0,1]
 
 imu_params:
   # acc_scale: 9.79 # livox
   acc_scale: 1.0
 
 keyframe:
-  distance_th: 1.0
-  angle_th: 1000.0 # degree
-  min_active_points_rate: 0.9
+  distance_th: 3.0
+  angle_th: 30.0
+  min_active_points_rate: 0.35
 
 scan_cloud_preprocess:
-  clip_range: 1.0
-  filter_size: 0.1
+  clip_range: 0.3
+  filter_size: 0.02
 
 normal_map:
-  num_keyframes: 20
-  filter_size: 0.1
-  num_normal_points: 10
-  normal_eigen_val_thresh: 0.05
+  num_keyframes: 200
+  filter_size: 0.02
+  num_normal_points: 8
+  normal_eigen_val_thresh: 0.03
 
 estimator:
-  use_loose_coupling: false
-  huber_delta: 0.1
-  num_max_iteration: 10
-  num_max_matching_points: 100000
-  max_correspondence_dist: 1.0
-  convergence_th: 0.5
+  use_loose_coupling: true
+  huber_delta: 0.20
+  num_max_iteration: 50
+  num_max_matching_points: 200000
+  max_correspondence_dist: 0.25
+  convergence_th: 0.005
