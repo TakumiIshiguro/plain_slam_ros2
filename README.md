@@ -128,9 +128,15 @@ We assume your `.pcd` files are located in `/tmp/pslam_data/` (the default setti
 
 To use the system as a localizer, set `use_as_localizer: true` in `config/lio_3d_config.yaml`, and set `map_cloud_dir` to the directory containing your `.pcd` files. Then, launch `lio_3d.launch.py`.
 
-**CAUTION:** The localizer computes a transformation from the odometry to IMU frames (`odom → imu`), but **does not** compute a transformation from the map frame to the odometry frame.
+The localizer computes a transformation from the odometry to IMU frames (`odom → imu`).
+In addition, when `use_as_localizer: true` and `publish_map_to_odom_tf: true`, it also publishes an identity transformation `map → odom`.
 
-If you want to construct a standard transformation tree for navigation, such as `map → odom → base_link → sensor`, you must manually define a static identity (zero) transformation between `map` and `odom` (e.g., using `static_transform_publisher`) and set the frame ID from `imu` to `base_link`.
+For a standard navigation transformation tree such as `map → odom → base_link → sensor`, set:
+
+- `map_frame: "map"`
+- `odom_frame: "odom"`
+- `imu_frame: "base_link"` (or your robot base frame)
+- `publish_map_to_odom_tf: true`
 
 
 

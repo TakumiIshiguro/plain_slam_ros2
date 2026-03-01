@@ -121,14 +121,32 @@ class LIO3DNode : public rclcpp::Node {
 
     this->declare_parameter<std::string>("odom_frame", "odom");
     this->declare_parameter<std::string>("imu_frame", "imu");
+    this->declare_parameter<std::string>("map_frame", "map");
+    this->declare_parameter<bool>("publish_map_to_odom_tf", true);
     this->get_parameter("odom_frame", odom_frame_);
     this->get_parameter("imu_frame", imu_frame_);
+    this->get_parameter("map_frame", map_frame_);
+    this->get_parameter("publish_map_to_odom_tf", publish_map_to_odom_tf_);
+    use_as_localizer_ = use_as_localizer;
 
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
-    // This node broadcasts a transformation from odom_frame_ to imu_frame_,
-    // even when operating in localization mode.
-    // Please choose appropriate frame names.
+    // This node broadcasts a transformation from odom_frame_ to imu_frame_.
+    // In localization mode, it can also broadcast map_frame_ to odom_frame_
+    // as an identity transform.
+    if (use_as_localizer_ && publish_map_to_odom_tf_) {
+      if (map_frame_ == odom_frame_) {
+        RCLCPP_WARN(this->get_logger(),
+          "map_frame and odom_frame are identical (%s). "
+          "Skipping map->odom TF broadcast.",
+          map_frame_.c_str());
+      } else {
+        RCLCPP_INFO(this->get_logger(),
+          "Publishing identity TF: %s -> %s",
+          map_frame_.c_str(), odom_frame_.c_str());
+      }
+    }
+
     if (use_as_localizer) {
       this->declare_parameter<std::string>("map_cloud_dir", "/tmp/pslam_data/");
       std::string map_cloud_dir;
@@ -141,7 +159,7 @@ class LIO3DNode : public rclcpp::Node {
 
       const pslam::PointCloud3f lio_map_cloud = lio_.GetNormalMapCloud();
       PublishPointCloud(lio_map_cloud_pub_,
-        odom_frame_, rclcpp::Clock().now(), lio_map_cloud);
+        MapCloudFrame(), rclcpp::Clock().now(), lio_map_cloud);
       lio_.SetMapUpdated(false);
     }
 
@@ -179,6 +197,11 @@ class LIO3DNode : public rclcpp::Node {
     const Sophus::SE3f imu_pose = lio_.GetIMUPose();
     PublishePose(imu_pose_pub_, odom_frame_, msg->header.stamp, imu_pose);
 
+    if (use_as_localizer_ && publish_map_to_odom_tf_ && map_frame_ != odom_frame_) {
+      BroadcastTransform(tf_broadcaster_, map_frame_, odom_frame_,
+        msg->header.stamp, Sophus::SE3f());
+    }
+
     BroadcastTransform(tf_broadcaster_, odom_frame_, imu_frame_,
       msg->header.stamp, imu_pose);
 
@@ -194,9 +217,16 @@ class LIO3DNode : public rclcpp::Node {
 
     if (lio_.IsMapUpdated()) {
       const pslam::PointCloud3f lio_map_cloud = lio_.GetNormalMapCloud();
-      PublishPointCloud(lio_map_cloud_pub_, odom_frame_, msg->header.stamp, lio_map_cloud);
+      PublishPointCloud(lio_map_cloud_pub_, MapCloudFrame(), msg->header.stamp, lio_map_cloud);
       lio_.SetMapUpdated(false);
     }
+  }
+
+  std::string MapCloudFrame() const {
+    if (use_as_localizer_ && publish_map_to_odom_tf_ && map_frame_ != odom_frame_) {
+      return map_frame_;
+    }
+    return odom_frame_;
   }
 
   void ImuCallback(const sensor_msgs::msg::Imu::SharedPtr msg) {
@@ -252,6 +282,9 @@ class LIO3DNode : public rclcpp::Node {
 
   std::string odom_frame_;
   std::string imu_frame_;
+  std::string map_frame_;
+  bool publish_map_to_odom_tf_ = true;
+  bool use_as_localizer_ = false;
 
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };

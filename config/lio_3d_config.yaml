@@ -16,4 +16,6 @@ lio_3d_node:
     deskewed_scan_cloud_topic: "/pslam/deskewed_scan_cloud"
 
     odom_frame: "odom"
-    imu_frame: "imu"
+    map_frame: "map"
+    imu_frame: "base_link"
+    publish_map_to_odom_tf: true
