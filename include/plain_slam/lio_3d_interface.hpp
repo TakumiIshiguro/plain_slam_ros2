@@ -65,6 +65,8 @@ class LIO3DInterface {
 
   bool ReadMapCloudPCD(const std::string& map_cloud_dir);
 
+  void SetInitialPose(const Sophus::SE3f& pose);
+
   void SetLocalizationMode(bool enable) {
     localization_mode_ = enable;
   }

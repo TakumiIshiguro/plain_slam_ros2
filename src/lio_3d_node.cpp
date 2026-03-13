@@ -24,6 +24,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -161,6 +162,14 @@ class LIO3DNode : public rclcpp::Node {
       PublishPointCloud(lio_map_cloud_pub_,
         MapCloudFrame(), rclcpp::Clock().now(), lio_map_cloud);
       lio_.SetMapUpdated(false);
+
+      this->declare_parameter<std::string>("initialpose_topic", "/initialpose");
+      std::string initialpose_topic;
+      this->get_parameter("initialpose_topic", initialpose_topic);
+      initialpose_sub_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+        initialpose_topic, 10,
+        std::bind(&LIO3DNode::InitialPoseCallback, this, std::placeholders::_1));
+      RCLCPP_INFO(this->get_logger(), "Initial pose topic enabled: %s", initialpose_topic.c_str());
     }
 
     lio_.ReadLIOParams();
@@ -169,6 +178,25 @@ class LIO3DNode : public rclcpp::Node {
   }
 
  private:
+  void InitialPoseCallback(
+    const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg) {
+    if (!use_as_localizer_) {
+      return;
+    }
+
+    const Eigen::Vector3f trans(msg->pose.pose.position.x,
+      msg->pose.pose.position.y, msg->pose.pose.position.z);
+    const Eigen::Quaternionf quat(msg->pose.pose.orientation.w,
+      msg->pose.pose.orientation.x, msg->pose.pose.orientation.y,
+      msg->pose.pose.orientation.z);
+    const Sophus::SE3f pose(quat.normalized().toRotationMatrix(), trans);
+    lio_.SetInitialPose(pose);
+
+    RCLCPP_INFO(this->get_logger(),
+      "Localization pose updated from %s.",
+      initialpose_sub_->get_topic_name());
+  }
+
   void PointcloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     // Parse the PointCloud2 message
     pslam::PointCloud3f scan_cloud;
@@ -269,6 +297,7 @@ class LIO3DNode : public rclcpp::Node {
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initialpose_sub_;
 
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr imu_pose_pub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr imu_odom_pub_;
