@@ -15,25 +15,74 @@ imu_params:
   # acc_scale: 9.79 # livox
   acc_scale: 1.0
 
+# sim
+# keyframe:
+#   distance_th: 3.0
+#   angle_th: 30.0
+#   min_active_points_rate: 0.35
+
+# scan_cloud_preprocess:
+#   clip_range: 0.3
+#   filter_size: 0.02
+
+# normal_map:
+#   num_keyframes: 200
+#   filter_size: 0.02
+#   num_normal_points: 8
+#   normal_eigen_val_thresh: 0.03
+
+# estimator:
+#   use_loose_coupling: true
+#   huber_delta: 0.20
+#   num_max_iteration: 50
+#   num_max_matching_points: 200000
+#   max_correspondence_dist: 0.25
+#   convergence_th: 0.005
+
+# real
+# keyframe:
+#   distance_th: 0.5
+#   angle_th: 5.0 # degree
+#   min_active_points_rate: 0.45
+
+# scan_cloud_preprocess:
+#   clip_range: 0.7
+#   filter_size: 0.05
+
+# normal_map:
+#   num_keyframes: 50
+#   filter_size: 0.05
+#   num_normal_points: 12
+#   normal_eigen_val_thresh: 0.08
+
+# estimator:
+#   use_loose_coupling: false
+#   huber_delta: 0.2
+#   num_max_iteration: 40
+#   num_max_matching_points: 150000
+#   max_correspondence_dist: 0.9
+#   convergence_th: 0.02
+
+# real localize
 keyframe:
-  distance_th: 3.0
-  angle_th: 30.0
+  distance_th: 0.5
+  angle_th: 5.0 # degree
   min_active_points_rate: 0.35
 
 scan_cloud_preprocess:
-  clip_range: 0.3
-  filter_size: 0.02
+  clip_range: 0.5
+  filter_size: 0.03
 
 normal_map:
-  num_keyframes: 200
-  filter_size: 0.02
-  num_normal_points: 8
-  normal_eigen_val_thresh: 0.03
+  num_keyframes: 80
+  filter_size: 0.03
+  num_normal_points: 15
+  normal_eigen_val_thresh: 0.10
 
 estimator:
-  use_loose_coupling: true
-  huber_delta: 0.20
-  num_max_iteration: 50
-  num_max_matching_points: 200000
-  max_correspondence_dist: 0.25
-  convergence_th: 0.005
+  use_loose_coupling: false
+  huber_delta: 0.2
+  num_max_iteration: 40
+  num_max_matching_points: 120000
+  max_correspondence_dist: 1.0
+  convergence_th: 0.01
