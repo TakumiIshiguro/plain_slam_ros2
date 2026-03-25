@@ -1,30 +1,96 @@
-/*
- * plain_slam_ros2
- * 
- * Copyright (c) 2025 Naoki Akai
- * All rights reserved.
- *
- * This software is provided free of charge for academic and personal use only.
- * Commercial use is strictly prohibited without prior written permission from the author.
- *
- * Conditions:
- *   - Non-commercial use only
- *   - Attribution required in any academic or derivative work
- *   - Redistribution permitted with this license header intact
- *
- * Disclaimer:
- *   This software is provided "as is" without warranty of any kind.
- *   The author is not liable for any damages arising from its use.
- *
- * For commercial licensing inquiries, please contact:
- *   Naoki Akai
- *   Email: n.akai.goo[at]gmail.com   ([at] -> @)
- *   Subject: [plain_slam_ros2] Commercial License Inquiry
- */
-
 #include <plain_slam/io.hpp>
 
+#include <cstring>
+#include <sstream>
+#include <string>
+
+#include <pcl/PCLPointCloud2.h>
+#include <pcl/PCLPointField.h>
+#include <pcl/io/pcd_io.h>
+
 namespace pslam {
+
+namespace {
+
+bool ParseBinaryCompressedPCD(
+  const std::string& fname,
+  PointCloud3f& cloud,
+  std::vector<float>& intensities) {
+  pcl::PCLPointCloud2 pcl_cloud;
+  if (pcl::io::loadPCDFile(fname, pcl_cloud) < 0) {
+    std::cerr << "[ERROR] Failed to load binary_compressed PCD with PCL: " << fname << std::endl;
+    return false;
+  }
+
+  const pcl::PCLPointField* x_field = nullptr;
+  const pcl::PCLPointField* y_field = nullptr;
+  const pcl::PCLPointField* z_field = nullptr;
+  const pcl::PCLPointField* intensity_field = nullptr;
+  for (const auto& field : pcl_cloud.fields) {
+    if (field.name == "x") {
+      x_field = &field;
+    } else if (field.name == "y") {
+      y_field = &field;
+    } else if (field.name == "z") {
+      z_field = &field;
+    } else if (field.name == "intensity") {
+      intensity_field = &field;
+    }
+  }
+
+  if (x_field == nullptr || y_field == nullptr || z_field == nullptr) {
+    std::cerr << "[ERROR] binary_compressed PCD must contain x, y, and z fields." << std::endl;
+    return false;
+  }
+
+  const auto is_supported_float_field = [](const pcl::PCLPointField* field) {
+    return field != nullptr &&
+           field->datatype == pcl::PCLPointField::FLOAT32 &&
+           field->count == 1;
+  };
+
+  if (!is_supported_float_field(x_field) ||
+      !is_supported_float_field(y_field) ||
+      !is_supported_float_field(z_field)) {
+    std::cerr << "[ERROR] binary_compressed PCD supports float32 x/y/z fields only." << std::endl;
+    return false;
+  }
+
+  const bool has_intensity = intensity_field != nullptr;
+  if (has_intensity && !is_supported_float_field(intensity_field)) {
+    std::cerr << "[ERROR] binary_compressed PCD supports float32 intensity only." << std::endl;
+    return false;
+  }
+
+  const size_t num_points = static_cast<size_t>(pcl_cloud.width) * static_cast<size_t>(pcl_cloud.height);
+  cloud.clear();
+  intensities.clear();
+  cloud.reserve(num_points);
+  if (has_intensity) {
+    intensities.reserve(num_points);
+  }
+
+  for (size_t i = 0; i < num_points; ++i) {
+    const uint8_t* point_ptr = pcl_cloud.data.data() + i * pcl_cloud.point_step;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    std::memcpy(&x, point_ptr + x_field->offset, sizeof(float));
+    std::memcpy(&y, point_ptr + y_field->offset, sizeof(float));
+    std::memcpy(&z, point_ptr + z_field->offset, sizeof(float));
+    cloud.emplace_back(x, y, z);
+
+    if (has_intensity) {
+      float intensity = 0.0f;
+      std::memcpy(&intensity, point_ptr + intensity_field->offset, sizeof(float));
+      intensities.push_back(intensity);
+    }
+  }
+
+  return true;
+}
+
+} // namespace
 
 bool WritePointCloud(
   const std::string& fname,
@@ -260,7 +326,8 @@ bool ReadPCD(
     }
   }
 
-  if (num_points == 0 || (data_type != "binary" && data_type != "ascii")) {
+  if (num_points == 0 ||
+      (data_type != "binary" && data_type != "ascii" && data_type != "binary_compressed")) {
     std::cerr << "[ERROR] Unsupported or malformed PCD file." << std::endl;
     return false;
   }
@@ -286,6 +353,10 @@ bool ReadPCD(
       }
     }
 
+  } else if (data_type == "binary_compressed") {
+    if (!ParseBinaryCompressedPCD(fname, cloud, intensities)) {
+      return false;
+    }
   } else if (data_type == "ascii") {
     std::string data_line;
     while (std::getline(ifs, data_line)) {

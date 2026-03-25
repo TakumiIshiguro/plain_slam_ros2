@@ -12,6 +12,7 @@ def generate_launch_description():
 
   lio_config_yaml = os.path.join(config_dir, 'lio_3d_config.yaml')
   slam_config_yaml = os.path.join(config_dir, 'slam_3d_config.yaml')
+  rviz_config = os.path.join(config_dir, 'slam_3d.rviz')
 
   return LaunchDescription([
     Node(
@@ -33,5 +34,12 @@ def generate_launch_description():
         slam_config_yaml,
         {'param_files_dir': config_dir}
       ]
+    ),
+    Node(
+      package='rviz2',
+      executable='rviz2',
+      name='rviz2',
+      arguments=['-d', rviz_config],
+      output='screen'
     )
   ])

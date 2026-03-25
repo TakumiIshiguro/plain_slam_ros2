@@ -21,7 +21,11 @@ find_package(visualization_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(PCL REQUIRED COMPONENTS io)
 
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 
 # lio_3d_node
@@ -44,7 +48,8 @@ add_executable(lio_3d_node
 target_include_directories(lio_3d_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
-  ${EIGEN3_INCLUDE_DIRS})
+  ${EIGEN3_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
 
 target_compile_features(lio_3d_node PUBLIC c_std_99 cxx_std_17)
 
@@ -62,7 +67,7 @@ ament_target_dependencies(
   "visualization_msgs"
 )
 
-target_link_libraries(lio_3d_node yaml-cpp)
+target_link_libraries(lio_3d_node yaml-cpp ${PCL_LIBRARIES})
 
 install(TARGETS lio_3d_node DESTINATION lib/${PROJECT_NAME})
 
@@ -84,7 +89,8 @@ add_executable(slam_3d_node
 target_include_directories(slam_3d_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
-  ${EIGEN3_INCLUDE_DIRS})
+  ${EIGEN3_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
 
 target_compile_features(slam_3d_node PUBLIC c_std_99 cxx_std_17)
 
@@ -102,7 +108,7 @@ ament_target_dependencies(
   "visualization_msgs"
 )
 
-target_link_libraries(slam_3d_node yaml-cpp)
+target_link_libraries(slam_3d_node yaml-cpp ${PCL_LIBRARIES})
 
 install(TARGETS slam_3d_node DESTINATION lib/${PROJECT_NAME})
 
@@ -119,7 +125,8 @@ add_executable(pc2_to_pcd_node
 target_include_directories(pc2_to_pcd_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
-  ${EIGEN3_INCLUDE_DIRS})
+  ${EIGEN3_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
 
 target_compile_features(pc2_to_pcd_node PUBLIC c_std_99 cxx_std_17)
 
@@ -133,6 +140,8 @@ ament_target_dependencies(
   "tf2_msgs"
   "tf2_ros"
 )
+
+target_link_libraries(pc2_to_pcd_node ${PCL_LIBRARIES})
 
 install(TARGETS pc2_to_pcd_node DESTINATION lib/${PROJECT_NAME})
 
@@ -150,7 +159,8 @@ add_executable(lidar_lidar_calibration_node
 target_include_directories(lidar_lidar_calibration_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
-  ${EIGEN3_INCLUDE_DIRS})
+  ${EIGEN3_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS})
 
 target_compile_features(lidar_lidar_calibration_node PUBLIC c_std_99 cxx_std_17)
 
@@ -159,6 +169,8 @@ ament_target_dependencies(
   "rclcpp"
   "rclpy"
 )
+
+target_link_libraries(lidar_lidar_calibration_node ${PCL_LIBRARIES})
 
 install(TARGETS lidar_lidar_calibration_node DESTINATION lib/${PROJECT_NAME})
 
