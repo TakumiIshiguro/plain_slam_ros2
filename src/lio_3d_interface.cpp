@@ -353,4 +353,14 @@ bool LIO3DInterface::ReadMapCloudPCD(const std::string& map_cloud_dir) {
   return true;
 }
 
+void LIO3DInterface::SetInitialPose(const Sophus::SE3f& pose) {
+  std::lock_guard<std::mutex> lock(imu_mutex_);
+  imu_state_.T = pose;
+  imu_state_.v = Eigen::Vector3f::Zero();
+  imu_odom_state_ = imu_state_;
+  imu_state_cov_ = StateCov::Identity();
+  imu_odom_state_cov_ = imu_state_cov_;
+  imu_measures_.clear();
+}
+
 } // namespace pslam
