@@ -4,7 +4,8 @@ lio_3d_node:
     use_as_localizer: true
     # map_cloud_dir: "/tmp/pslam_data/"
     # map_cloud_dir: "/home/takumi/ros2_ws/src/plain_slam_ros2/maps/sim/"
-    map_cloud_dir: "/home/takumi/ros2_ws/src/plain_slam_ros2/maps/3f/"
+    # map_cloud_dir: "/home/takumi/ros2_ws/src/plain_slam_ros2/maps/3f/"
+    map_cloud_dir: "/home/takumi/ros2_ws/src/plain_slam_ros2/maps/tsudanuma/"
     param_files_dir: "" # LIO parameters must be located under plain_slam_ros2/config/
 
     pointcloud_topic: "/surestar_points"
@@ -19,4 +20,4 @@ lio_3d_node:
     odom_frame: "odom"
     map_frame: "map"
     imu_frame: "base_link"
-    publish_map_to_odom_tf: false
+    publish_map_to_odom_tf: true
