@@ -4,7 +4,8 @@ initial_pose:
 
 extrinsics:
   imu_to_lidar:
-    translation: [-0.350, 0.000, 0.368] # livox mid360
+    # translation: [-0.350, 0.000, 0.368] # livox mid360
+    translation: [0.0110, 0.02329, -0.04412] 
     # translation: [-0.006253, 0.011775, 0.028535] # outster os1
     rotation_matrix: [1,0,0, 0,1,0, 0,0,1]
     # rotation_matrix: [0,-1,0, 1,0,0, 0,0,1]
@@ -12,8 +13,8 @@ extrinsics:
     # rotation_matrix: [0,1,0, -1,0,0, 0,0,1]
 
 imu_params:
-  # acc_scale: 9.79 # livox
-  acc_scale: 1.0
+  acc_scale: 9.79 # livox
+  # acc_scale: 1.0
 
 # sim
 # keyframe:
@@ -39,7 +40,7 @@ imu_params:
 #   max_correspondence_dist: 0.25
 #   convergence_th: 0.005
 
-# real
+# 3f
 # keyframe:
 #   distance_th: 0.5
 #   angle_th: 5.0 # degree
@@ -63,26 +64,74 @@ imu_params:
 #   max_correspondence_dist: 0.9
 #   convergence_th: 0.02
 
-# real localize
+# 3f localize
+# keyframe:
+#   distance_th: 0.5
+#   angle_th: 5.0 # degree
+#   min_active_points_rate: 0.35
+
+# scan_cloud_preprocess:
+#   clip_range: 0.5
+#   filter_size: 0.03
+
+# normal_map:
+#   num_keyframes: 80
+#   filter_size: 0.03
+#   num_normal_points: 15
+#   normal_eigen_val_thresh: 0.10
+
+# estimator:
+#   use_loose_coupling: false
+#   huber_delta: 0.2
+#   num_max_iteration: 40
+#   num_max_matching_points: 120000
+#   max_correspondence_dist: 1.0
+#   convergence_th: 0.01
+
+# tsudanuma
+# keyframe:
+#   distance_th: 1.2
+#   angle_th: 8.0 # degree
+#   min_active_points_rate: 0.20
+
+# scan_cloud_preprocess:
+#   clip_range: 1.5
+#   filter_size: 0.08
+
+# normal_map:
+#   num_keyframes: 120
+#   filter_size: 0.08
+#   num_normal_points: 20
+#   normal_eigen_val_thresh: 0.06
+
+# estimator:
+#   use_loose_coupling: false
+#   huber_delta: 0.3
+#   num_max_iteration: 50
+#   num_max_matching_points: 150000
+#   max_correspondence_dist: 1.8
+#   convergence_th: 0.02
+
+# livox
 keyframe:
-  distance_th: 0.5
-  angle_th: 5.0 # degree
-  min_active_points_rate: 0.35
+  distance_th: 5.0
+  angle_th: 1000.0 # degree
+  min_active_points_rate: 0.95
 
 scan_cloud_preprocess:
-  clip_range: 0.5
-  filter_size: 0.03
+  clip_range: 1.0
+  filter_size: 0.1
 
 normal_map:
-  num_keyframes: 80
-  filter_size: 0.03
-  num_normal_points: 15
-  normal_eigen_val_thresh: 0.10
+  num_keyframes: 10
+  filter_size: 0.1
+  num_normal_points: 10
+  normal_eigen_val_thresh: 0.2
 
 estimator:
   use_loose_coupling: false
-  huber_delta: 0.2
-  num_max_iteration: 40
-  num_max_matching_points: 120000
+  huber_delta: 0.1
+  num_max_iteration: 5
+  num_max_matching_points: 10000
   max_correspondence_dist: 1.0
-  convergence_th: 0.01
+  convergence_th: 0.1

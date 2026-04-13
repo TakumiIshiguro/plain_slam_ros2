@@ -23,25 +23,49 @@
 #   huber_delta: 0.05
 
 # real
+# preprocess:
+#   accumulation_cycle: 1
+#   scan_cloud_filter_size: 0.05
+
+# keyframe:
+#   distance_th: 1.0
+#   angle_th: 5.0 # degree
+#   min_local_map_matching_rate: 0.6
+
+# loop_closure:
+#   num_loop_candidates: 10
+#   loop_detection_distance_thresh: 30.0
+#   loop_detection_height_thresh: 1.5
+#   error_average_th: 0.4
+#   active_points_rate_th: 0.45
+#   gicp_max_iteration: 30
+#   gicp_epsilon: 0.01
+#   gicp_max_correspondence_dist: 2.0
+#   gicp_huber_delta: 0.2
+
+# pose_graph:
+#   huber_delta: 0.01
+
+# livox
 preprocess:
-  accumulation_cycle: 1
-  scan_cloud_filter_size: 0.05
+  accumulation_cycle: 5
+  scan_cloud_filter_size: 0.1
 
 keyframe:
-  distance_th: 1.0
-  angle_th: 5.0 # degree
-  min_local_map_matching_rate: 0.6
+  distance_th: 10.0
+  angle_th: 1000.0 # degree
+  min_local_map_matching_rate: 0.95
 
 loop_closure:
   num_loop_candidates: 10
   loop_detection_distance_thresh: 30.0
-  loop_detection_height_thresh: 1.5
-  error_average_th: 0.4
-  active_points_rate_th: 0.45
-  gicp_max_iteration: 30
-  gicp_epsilon: 0.01
-  gicp_max_correspondence_dist: 2.0
-  gicp_huber_delta: 0.2
+  loop_detection_height_thresh: 10.0
+  error_average_th: 1.0
+  active_points_rate_th: 0.5
+  gicp_max_iteration: 5
+  gicp_epsilon: 0.5
+  gicp_max_correspondence_dist: 10.0
+  gicp_huber_delta: 0.5
 
 pose_graph:
-  huber_delta: 0.01
+  huber_delta: 0.1
